@@ -20,6 +20,7 @@ public class MoreMinecartsMod {
 
     public void initResources() {
         PoweredMinecartMob.texture = GameTexture.fromFile("mobs/poweredminecart");
+        PoweredMinecartMob.rubiesOverlayTexture = GameTexture.fromFile("mobs/poweredminecartrubiesoverlay");
     }
 
     public void postInit() {

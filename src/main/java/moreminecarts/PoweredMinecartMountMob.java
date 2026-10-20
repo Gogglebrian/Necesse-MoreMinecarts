@@ -32,6 +32,12 @@ public class PoweredMinecartMountMob extends MinecartMountMob {
     }
 
     @Override
+    public void clientTick() {
+        super.clientTick();
+        PoweredMinecartMob.refreshHeadlights((Mob)this, this.minecartDir);
+    }
+
+    @Override
     public void addDrawables(List<MobDrawable> list, OrderableDrawables tileList, OrderableDrawables topList, Level level, int x, int y, TickManager tickManager, GameCamera camera, PlayerMob perspective) {
         super.addDrawables(list, tileList, topList, level, x, y, tickManager, camera, perspective);
         GameLight light = level.getLightLevel(getTileCoordinate(x), getTileCoordinate(y));
@@ -42,6 +48,7 @@ public class PoweredMinecartMountMob extends MinecartMountMob {
         drawY += level.getTile(getTileCoordinate(x), getTileCoordinate(y)).getMobSinkingAmount(this);
         final MaskShaderOptions swimMask = this.getSwimMaskShaderOptions(this.inLiquidFloat(x, y));
         final DrawOptions behind = ((TextureDrawOptionsEnd) PoweredMinecartMob.texture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).startGlowOptions(level, (long)this.getID()).light(light).applyEnemyTracker(this, perspective)).pos(drawX, drawY);
+        final DrawOptions overlay = ((TextureDrawOptionsEnd) PoweredMinecartMob.rubiesOverlayTexture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).pos(drawX, drawY));
         list.add(new MobDrawable() {
             public void draw(TickManager tickManager) {
             }
@@ -49,6 +56,7 @@ public class PoweredMinecartMountMob extends MinecartMountMob {
             public void drawBehindRider(TickManager tickManager) {
                 swimMask.use();
                 behind.draw();
+                overlay.draw();
                 swimMask.stop();
             }
         });

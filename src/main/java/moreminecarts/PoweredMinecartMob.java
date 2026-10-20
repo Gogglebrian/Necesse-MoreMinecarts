@@ -24,9 +24,11 @@ import java.util.List;
 
 public class PoweredMinecartMob extends MinecartMob {
     public static GameTexture texture;
+    public static GameTexture rubiesOverlayTexture;
     public static LootTable lootTable = new LootTable(new LootItemInterface[]{new LootItem("poweredminecart")});
     public static float speed = 230.0F;
     public static float accelMod = 0.66F;
+    public static float headlightDistanceAhead = 75.0F;
 
     public PoweredMinecartMob() {
         super();
@@ -37,6 +39,33 @@ public class PoweredMinecartMob extends MinecartMob {
     @Override
     public LootTable getLootTable() {
         return lootTable;
+    }
+
+    public static void refreshHeadlights(Mob cart, int minecartDir) {
+        float lightOffsetX = 0, lightOffsetY = 0;
+        switch(minecartDir) {
+            case 0: // up
+                lightOffsetY = -headlightDistanceAhead;
+                break;
+            case 1: // right
+                lightOffsetX = headlightDistanceAhead;
+                break;
+            case 2: // down
+                lightOffsetY = headlightDistanceAhead;
+                break;
+            default: // left
+                lightOffsetX = -headlightDistanceAhead;
+        }
+
+        cart.getLevel().lightManager.refreshParticleLightFloat(cart.x + lightOffsetX, cart.y + lightOffsetY, 5.0F, 0.5F, 125);
+        cart.getLevel().lightManager.refreshParticleLightFloat(cart.x + (lightOffsetX*2.0F), cart.y + (lightOffsetY*2.0F), 5.0F, 0.5F, 175);
+
+    }
+
+    @Override
+    public void clientTick() {
+        super.clientTick();
+        refreshHeadlights((Mob)this, this.minecartDir);
     }
 
     /// Totally vanilla but replaced the texture with our own
@@ -51,6 +80,7 @@ public class PoweredMinecartMob extends MinecartMob {
         drawY += level.getTile(getTileCoordinate(x), getTileCoordinate(y)).getMobSinkingAmount(this);
         final MaskShaderOptions swimMask = this.getSwimMaskShaderOptions(this.inLiquidFloat(x, y));
         final DrawOptions behind = ((TextureDrawOptionsEnd) texture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).startGlowOptions(level, (long)this.getID()).light(light).applyEnemyTracker(this, perspective)).pos(drawX, drawY);
+        final DrawOptions overlay = ((TextureDrawOptionsEnd) rubiesOverlayTexture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).pos(drawX, drawY));
         list.add(new MobDrawable() {
             public void draw(TickManager tickManager) {
             }
@@ -58,6 +88,7 @@ public class PoweredMinecartMob extends MinecartMob {
             public void drawBehindRider(TickManager tickManager) {
                 swimMask.use();
                 behind.draw();
+                overlay.draw();
                 swimMask.stop();
             }
         });
