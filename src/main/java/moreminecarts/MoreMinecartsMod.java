@@ -13,18 +13,18 @@ import necesse.inventory.recipe.Ingredient;
 public class MoreMinecartsMod {
 
     public void init() {
-        ItemRegistry.registerItem("tungstenminecart", new TungstenMinecartMountItem(), 400, true);
-        MobRegistry.registerMob("tungstenminecartmount", TungstenMinecartMountMob.class, false, false);
-        MobRegistry.registerMob("tungstenminecart", TungstenMinecartMob.class, false);
+        ItemRegistry.registerItem("poweredminecart", new PoweredMinecartMountItem(), 400, true);
+        MobRegistry.registerMob("poweredminecartmount", PoweredMinecartMountMob.class, false, false);
+        MobRegistry.registerMob("poweredminecart", PoweredMinecartMob.class, false);
     }
 
     public void initResources() {
-        TungstenMinecartMob.texture = GameTexture.fromFile("mobs/tungstenminecart");
+        PoweredMinecartMob.texture = GameTexture.fromFile("mobs/poweredminecart");
     }
 
     public void postInit() {
         Recipes.registerModRecipe(new Recipe(
-                "tungstenminecart",
+                "poweredminecart",
                 1,
                 RecipeTechRegistry.TUNGSTEN_WORKSTATION,
                 new Ingredient[] {

@@ -1,19 +1,19 @@
 package moreminecarts;
 
 import necesse.engine.gameLoop.tickManager.TickManager;
-import necesse.engine.localization.message.GameMessage;
 import necesse.engine.registries.MobRegistry;
-import necesse.entity.mobs.MaskShaderOptions;
-import necesse.entity.mobs.Mob;
-import necesse.entity.mobs.MobDrawable;
-import necesse.entity.mobs.PlayerMob;
+import necesse.entity.mobs.*;
 import necesse.entity.mobs.summon.MinecartLinePos;
 import necesse.entity.mobs.summon.MinecartLines;
-import necesse.entity.mobs.summon.summonFollowingMob.mountFollowingMob.MinecartMountMob;
+import necesse.entity.mobs.summon.MinecartMob;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawOptions.DrawOptions;
 import necesse.gfx.drawOptions.texture.TextureDrawOptionsEnd;
 import necesse.gfx.drawables.OrderableDrawables;
+import necesse.gfx.gameTexture.GameTexture;
+import necesse.inventory.lootTable.LootItemInterface;
+import necesse.inventory.lootTable.LootTable;
+import necesse.inventory.lootTable.lootItem.LootItem;
 import necesse.level.gameObject.GameObject;
 import necesse.level.gameObject.MinecartTrackObject;
 import necesse.level.maps.Level;
@@ -22,18 +22,24 @@ import necesse.level.maps.light.GameLight;
 import java.awt.*;
 import java.util.List;
 
-public class TungstenMinecartMountMob extends MinecartMountMob {
-    public TungstenMinecartMountMob() {
+public class PoweredMinecartMob extends MinecartMob {
+    public static GameTexture texture;
+    public static LootTable lootTable = new LootTable(new LootItemInterface[]{new LootItem("poweredminecart")});
+    public static float speed = 230.0F;
+    public static float accelMod = 0.66F;
+
+    public PoweredMinecartMob() {
         super();
-        this.setSpeed(220.0F);
-        this.accelerationMod = 0.2F;
+        this.setSpeed(speed);
+        this.accelerationMod = accelMod;
     }
 
     @Override
-    protected GameMessage getSummonLocalization() {
-        return MobRegistry.getLocalization("tungstenminecart");
+    public LootTable getLootTable() {
+        return lootTable;
     }
 
+    /// Totally vanilla but replaced the texture with our own
     @Override
     public void addDrawables(List<MobDrawable> list, OrderableDrawables tileList, OrderableDrawables topList, Level level, int x, int y, TickManager tickManager, GameCamera camera, PlayerMob perspective) {
         super.addDrawables(list, tileList, topList, level, x, y, tickManager, camera, perspective);
@@ -44,7 +50,7 @@ public class TungstenMinecartMountMob extends MinecartMountMob {
         drawY += this.getBobbing(x, y);
         drawY += level.getTile(getTileCoordinate(x), getTileCoordinate(y)).getMobSinkingAmount(this);
         final MaskShaderOptions swimMask = this.getSwimMaskShaderOptions(this.inLiquidFloat(x, y));
-        final DrawOptions behind = ((TextureDrawOptionsEnd) TungstenMinecartMob.texture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).startGlowOptions(level, (long)this.getID()).light(light).applyEnemyTracker(this, perspective)).pos(drawX, drawY);
+        final DrawOptions behind = ((TextureDrawOptionsEnd) texture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).startGlowOptions(level, (long)this.getID()).light(light).applyEnemyTracker(this, perspective)).pos(drawX, drawY);
         list.add(new MobDrawable() {
             public void draw(TickManager tickManager) {
             }
@@ -58,8 +64,9 @@ public class TungstenMinecartMountMob extends MinecartMountMob {
         this.addShadowDrawables(tileList, level, x, y, light, camera);
     }
 
+    /// Mostly vanilla but replaced mob and texture
     public static void drawPlacePreview(Level level, int levelX, int levelY, int dir, GameCamera camera) {
-        Mob mob = MobRegistry.getMob("tungstenminecart", level);
+        Mob mob = MobRegistry.getMob("poweredminecart", level);
         if (mob != null) {
             mob.setPos((float)levelX, (float)levelY, true);
             int tileX = mob.getTileX();
@@ -87,7 +94,7 @@ public class TungstenMinecartMountMob extends MinecartMountMob {
                     Point sprite = mob.getAnimSprite((int)pos.x, (int)pos.y, pos.dir);
                     drawY += mob.getBobbing((int)pos.x, (int)pos.y);
                     drawY += level.getTile(getTileCoordinate(pos.x), getTileCoordinate(pos.y)).getMobSinkingAmount(mob);
-                    TungstenMinecartMob.texture.initDraw().sprite(sprite.x, sprite.y, 64).alpha(0.5F).draw(drawX, drawY);
+                    texture.initDraw().sprite(sprite.x, sprite.y, 64).alpha(0.5F).draw(drawX, drawY);
                     return;
                 }
             }
@@ -96,6 +103,6 @@ public class TungstenMinecartMountMob extends MinecartMountMob {
         int drawX = camera.getDrawX(levelX) - 32;
         int drawY = camera.getDrawY(levelY) - 47;
         drawY += level.getLevelTile(getTileCoordinate(levelX), getTileCoordinate(levelY)).getLiquidBobbing();
-        TungstenMinecartMob.texture.initDraw().sprite(0, dir, 64).alpha(0.5F).draw(drawX, drawY);
+        texture.initDraw().sprite(0, dir, 64).alpha(0.5F).draw(drawX, drawY);
     }
 }

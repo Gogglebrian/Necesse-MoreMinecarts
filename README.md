@@ -1,3 +1,3 @@
-Necesse mod: Adds a new and improved Tungsten Minecart, with higher max speed, better acceleration, and nitro. Btw, if the name is anything to go by, I may even add another Minecart someday.
+Necesse mod: Adds Powered Minecart, 15% faster than the original and with much better acceleration. More cart(s) to come.
 
 For Necesse version 1.3.3

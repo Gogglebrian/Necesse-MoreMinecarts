@@ -1,11 +1,9 @@
 package moreminecarts;
 
-import necesse.engine.localization.Localization;
 import necesse.engine.network.gameNetworkData.GNDItemMap;
 import necesse.engine.registries.MobRegistry;
 import necesse.engine.sound.SoundEffect;
 import necesse.engine.sound.SoundManager;
-import necesse.engine.util.GameBlackboard;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.PlayerMob;
 import necesse.entity.mobs.itemAttacker.ItemAttackSlot;
@@ -13,7 +11,6 @@ import necesse.entity.mobs.itemAttacker.ItemAttackerMob;
 import necesse.entity.mobs.summon.MinecartMob;
 import necesse.gfx.GameResources;
 import necesse.gfx.camera.GameCamera;
-import necesse.gfx.gameTooltips.ListGameTooltips;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.PlayerInventorySlot;
 import necesse.inventory.item.mountItem.MinecartMountItem;
@@ -22,20 +19,11 @@ import necesse.level.gameObject.MinecartTrackObject;
 import necesse.level.gameObject.TrapTrackObject;
 import necesse.level.maps.Level;
 
-public class TungstenMinecartMountItem extends MinecartMountItem {
-    public TungstenMinecartMountItem() {
+public class PoweredMinecartMountItem extends MinecartMountItem {
+    public PoweredMinecartMountItem() {
         super();
-        this.mobStringID = "tungstenminecartmount";
+        this.mobStringID = "poweredminecartmount";
     }
-
-    /* Commenting this out for now, I think we don't need it
-    @Override
-    public ListGameTooltips getTooltips(InventoryItem item, PlayerMob perspective, GameBlackboard blackboard) {
-        ListGameTooltips tooltips = this.getBaseTooltips(item, perspective, blackboard);
-        tooltips.add(Localization.translate("itemtooltip", "tungstenminecarttip"));
-        return tooltips;
-    }
-     */
 
     @Override
     public InventoryItem onAttack(Level level, int x, int y, ItemAttackerMob attackerMob, int attackHeight, InventoryItem item, ItemAttackSlot slot, int animAttack, int seed, GNDItemMap mapContent) {
@@ -45,7 +33,7 @@ public class TungstenMinecartMountItem extends MinecartMountItem {
             PlayerMob player = (PlayerMob) attackerMob;
             if (this.canPlace(level, x, y, player, item, mapContent) == null) {
                 if (level.isServer()) {
-                    Mob mob = MobRegistry.getMob("tungstenminecart", level);
+                    Mob mob = MobRegistry.getMob("poweredminecart", level);
                     if (mob instanceof MinecartMob) {
                         ((MinecartMob) mob).minecartDir = attackerMob.isAttacking ? attackerMob.beforeAttackDir : attackerMob.getDir();
                         mob.resetUniqueID();
@@ -71,7 +59,7 @@ public class TungstenMinecartMountItem extends MinecartMountItem {
         if (player.getPositionPoint().distance((double)x, (double)y) > (double)100.0F) {
             return "outofrange";
         } else {
-            Mob mob = MobRegistry.getMob("tungstenminecart", level);
+            Mob mob = MobRegistry.getMob("poweredminecart", level);
             if (mob != null) {
                 mob.setPos((float)x, (float)y, true);
                 if (mob.collidesWith(level)) {
@@ -93,7 +81,7 @@ public class TungstenMinecartMountItem extends MinecartMountItem {
         String error = this.canPlace(level, x, y, player, item, (GNDItemMap)null);
         if (error == null) {
             int placeDir = player.isAttacking ? player.beforeAttackDir : player.getDir();
-            TungstenMinecartMob.drawPlacePreview(level, x, y, placeDir, camera);
+            PoweredMinecartMob.drawPlacePreview(level, x, y, placeDir, camera);
         }
     }
 }
