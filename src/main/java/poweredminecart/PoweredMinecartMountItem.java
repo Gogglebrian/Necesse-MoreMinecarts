@@ -1,9 +1,11 @@
-package moreminecarts;
+package poweredminecart;
 
+import necesse.engine.localization.Localization;
 import necesse.engine.network.gameNetworkData.GNDItemMap;
 import necesse.engine.registries.MobRegistry;
 import necesse.engine.sound.SoundEffect;
 import necesse.engine.sound.SoundManager;
+import necesse.engine.util.GameBlackboard;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.PlayerMob;
 import necesse.entity.mobs.itemAttacker.ItemAttackSlot;
@@ -11,6 +13,7 @@ import necesse.entity.mobs.itemAttacker.ItemAttackerMob;
 import necesse.entity.mobs.summon.MinecartMob;
 import necesse.gfx.GameResources;
 import necesse.gfx.camera.GameCamera;
+import necesse.gfx.gameTooltips.ListGameTooltips;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.PlayerInventorySlot;
 import necesse.inventory.item.mountItem.MinecartMountItem;
@@ -23,6 +26,13 @@ public class PoweredMinecartMountItem extends MinecartMountItem {
     public PoweredMinecartMountItem() {
         super();
         this.mobStringID = "poweredminecartmount";
+        this.rarity = Rarity.RARE;
+    }
+
+    public ListGameTooltips getTooltips(InventoryItem item, PlayerMob perspective, GameBlackboard blackboard) {
+        ListGameTooltips tooltips = super.getTooltips(item, perspective, blackboard);
+        tooltips.add(Localization.translate("itemtooltip", "poweredminecartheadlightstip"));
+        return tooltips;
     }
 
     @Override
@@ -35,9 +45,15 @@ public class PoweredMinecartMountItem extends MinecartMountItem {
                 if (level.isServer()) {
                     Mob mob = MobRegistry.getMob("poweredminecart", level);
                     if (mob instanceof MinecartMob) {
-                        ((MinecartMob) mob).minecartDir = attackerMob.isAttacking ? attackerMob.beforeAttackDir : attackerMob.getDir();
+                        int dir = ((MinecartMob) mob).minecartDir = attackerMob.isAttacking ? attackerMob.beforeAttackDir : attackerMob.getDir();
                         mob.resetUniqueID();
                         level.entityManager.addMob(mob, (float) x, (float) y);
+                        /*
+                        if (mob instanceof PoweredMinecartMob) {
+                            PoweredMinecartMob.setInitialHeadlightState(level, x, y, dir, ((PoweredMinecartMob)mob).headlightsOn);
+                        }
+                        */
+
                     }
                 }
 

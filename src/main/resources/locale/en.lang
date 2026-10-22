@@ -3,6 +3,7 @@ poweredminecart=Powered Minecart
 
 [itemtooltip]
 poweredminecarttooltip=Powered Minecart
+poweredminecartheadlightstip=Press [input=trinketability] to toggle headlight
 
 [mob]
 poweredminecart=Powered Minecart

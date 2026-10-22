@@ -1,4 +1,4 @@
-package moreminecarts;
+package poweredminecart;
 
 import necesse.engine.modLoader.annotations.ModEntry;
 import necesse.engine.registries.ItemRegistry;
@@ -10,7 +10,7 @@ import necesse.inventory.recipe.Recipe;
 import necesse.inventory.recipe.Ingredient;
 
 @ModEntry
-public class MoreMinecartsMod {
+public class PoweredMinecartMod {
 
     public void init() {
         ItemRegistry.registerItem("poweredminecart", new PoweredMinecartMountItem(), 400, true);
@@ -20,7 +20,8 @@ public class MoreMinecartsMod {
 
     public void initResources() {
         PoweredMinecartMob.texture = GameTexture.fromFile("mobs/poweredminecart");
-        PoweredMinecartMob.rubiesOverlayTexture = GameTexture.fromFile("mobs/poweredminecartrubiesoverlay");
+        PoweredMinecartMob.rubiesOverlayTexture = GameTexture.fromFile("mobs/poweredminecart_rubiesoverlay");
+        PoweredMinecartMob.rubiesOverlayBrightHeadlightTexture = GameTexture.fromFile("mobs/poweredminecart_rubiesoverlay_brightheadlight");
     }
 
     public void postInit() {
@@ -29,9 +30,8 @@ public class MoreMinecartsMod {
                 1,
                 RecipeTechRegistry.TUNGSTEN_WORKSTATION,
                 new Ingredient[] {
-                        new Ingredient("minecart", 1),
                         new Ingredient("tungstenbar",10),
-                        new Ingredient("ruby", 4),
+                        new Ingredient("ruby", 10),
                 }).showBefore("minecart"));
     }
 }

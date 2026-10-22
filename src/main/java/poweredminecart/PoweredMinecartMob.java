@@ -1,11 +1,18 @@
-package moreminecarts;
+package poweredminecart;
 
 import necesse.engine.gameLoop.tickManager.TickManager;
+import necesse.engine.network.Packet;
 import necesse.engine.registries.MobRegistry;
+import necesse.engine.save.LoadData;
+import necesse.engine.save.SaveData;
+import necesse.engine.sound.SoundEffect;
+import necesse.engine.sound.SoundManager;
 import necesse.entity.mobs.*;
+import necesse.entity.mobs.networkField.BooleanNetworkField;
 import necesse.entity.mobs.summon.MinecartLinePos;
 import necesse.entity.mobs.summon.MinecartLines;
 import necesse.entity.mobs.summon.MinecartMob;
+import necesse.gfx.GameResources;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawOptions.DrawOptions;
 import necesse.gfx.drawOptions.texture.TextureDrawOptionsEnd;
@@ -22,18 +29,25 @@ import necesse.level.maps.light.GameLight;
 import java.awt.*;
 import java.util.List;
 
-public class PoweredMinecartMob extends MinecartMob {
+public class PoweredMinecartMob extends MinecartMob implements MountAbility {
     public static GameTexture texture;
     public static GameTexture rubiesOverlayTexture;
+    public static GameTexture rubiesOverlayBrightHeadlightTexture;
     public static LootTable lootTable = new LootTable(new LootItemInterface[]{new LootItem("poweredminecart")});
     public static float speed = 230.0F;
     public static float accelMod = 0.66F;
     public static float headlightDistanceAhead = 75.0F;
+    public static float maxAllowedLightLevelForAutoHeadlight = 50.0F;
+
+    public final BooleanNetworkField headlightsOn;
+    private boolean loadedFromSave = false;
 
     public PoweredMinecartMob() {
         super();
         this.setSpeed(speed);
         this.accelerationMod = accelMod;
+
+        this.headlightsOn = this.registerNetworkField(new BooleanNetworkField(false));
     }
 
     @Override
@@ -41,34 +55,89 @@ public class PoweredMinecartMob extends MinecartMob {
         return lootTable;
     }
 
-    public static void refreshHeadlights(Mob cart, int minecartDir) {
-        float lightOffsetX = 0, lightOffsetY = 0;
-        switch(minecartDir) {
-            case 0: // up
-                lightOffsetY = -headlightDistanceAhead;
-                break;
-            case 1: // right
-                lightOffsetX = headlightDistanceAhead;
-                break;
-            case 2: // down
-                lightOffsetY = headlightDistanceAhead;
-                break;
-            default: // left
-                lightOffsetX = -headlightDistanceAhead;
+    public static float getHeadlightOffsetX(int minecartDir) {
+        if (minecartDir == 1) return headlightDistanceAhead; // right
+        else if (minecartDir == 3) return -headlightDistanceAhead; // left
+        else return 0; // up or down
+    }
+
+    public static float getHeadlightOffsetY(int minecartDir) {
+        if (minecartDir == 0) return -headlightDistanceAhead; // up
+        else if (minecartDir == 2) return headlightDistanceAhead; // down
+        else return 0; // left or right
+    }
+
+    public static void setInitialHeadlightState(Level level, int x, int y, int minecartDir, BooleanNetworkField headlightsOn) {
+        if (level.lightManager.getAmbientAndStaticLightLevel(getTileCoordinate(x), getTileCoordinate(y)).getLevel() <= maxAllowedLightLevelForAutoHeadlight) {
+            headlightsOn.set(true);
+            return;
         }
 
-        cart.getLevel().lightManager.refreshParticleLightFloat(cart.x + lightOffsetX, cart.y + lightOffsetY, 5.0F, 0.5F, 125);
-        cart.getLevel().lightManager.refreshParticleLightFloat(cart.x + (lightOffsetX*2.0F), cart.y + (lightOffsetY*2.0F), 5.0F, 0.5F, 175);
+        //Check positions ahead
+        float lightOffsetX = getHeadlightOffsetX(minecartDir);
+        float lightOffsetY = getHeadlightOffsetY(minecartDir);
 
+        if ((level.lightManager.getAmbientAndStaticLightLevel(getTileCoordinate(x + (int)lightOffsetX), getTileCoordinate(y + (int)lightOffsetY)).getLevel() <= maxAllowedLightLevelForAutoHeadlight)
+                || (level.lightManager.getAmbientAndStaticLightLevel(getTileCoordinate(x + (int)lightOffsetX * 2), getTileCoordinate(y + (int)lightOffsetY * 2)).getLevel() <= maxAllowedLightLevelForAutoHeadlight))
+        {
+            headlightsOn.set(true);
+        }
+    }
+
+    public void init() {
+        super.init();
+
+        if (this.isServer() && !this.loadedFromSave) {
+            setInitialHeadlightState(
+                    this.getLevel(),
+                    this.getX(),
+                    this.getY(),
+                    this.minecartDir,
+                    this.headlightsOn
+            );
+        }
+    }
+
+    public static void refreshHeadlights(Level level, Mob cart, int minecartDir) {
+        float lightOffsetX = getHeadlightOffsetX(minecartDir);
+        float lightOffsetY = getHeadlightOffsetY(minecartDir);
+
+        level.lightManager.refreshParticleLightFloat(cart.x + lightOffsetX, cart.y + lightOffsetY, 5.0F, 0.5F, 125);
+        level.lightManager.refreshParticleLightFloat(cart.x + (lightOffsetX*2.0F), cart.y + (lightOffsetY*2.0F), 5.0F, 0.5F, 175);
+    }
+
+    @Override
+    public void addSaveData(SaveData save) {
+        super.addSaveData(save);
+        save.addBoolean("minecartHeadlightsOn", this.headlightsOn.get());
+    }
+
+    @Override
+    public void applyLoadData(LoadData save) {
+        super.applyLoadData(save);
+        this.headlightsOn.set(save.getBoolean("minecartHeadlightsOn", false));
+        this.loadedFromSave = true;
     }
 
     @Override
     public void clientTick() {
         super.clientTick();
-        refreshHeadlights((Mob)this, this.minecartDir);
+        if (headlightsOn.get()) refreshHeadlights(this.getLevel(), (Mob)this, this.minecartDir);
     }
 
-    /// Totally vanilla but replaced the texture with our own
+    public void runMountAbility(PlayerMob player, Packet content) {
+        boolean newState = !this.headlightsOn.get();
+        this.headlightsOn.set(newState);
+
+        if (this.isClient()) {
+            SoundManager.playSound(GameResources.tick, SoundEffect.effect(player).pitch(0.8F));
+        }
+    }
+
+    public boolean canRunMountAbility(PlayerMob player, Packet content) {
+        return true;
+    }
+
     @Override
     public void addDrawables(List<MobDrawable> list, OrderableDrawables tileList, OrderableDrawables topList, Level level, int x, int y, TickManager tickManager, GameCamera camera, PlayerMob perspective) {
         super.addDrawables(list, tileList, topList, level, x, y, tickManager, camera, perspective);
@@ -80,7 +149,8 @@ public class PoweredMinecartMob extends MinecartMob {
         drawY += level.getTile(getTileCoordinate(x), getTileCoordinate(y)).getMobSinkingAmount(this);
         final MaskShaderOptions swimMask = this.getSwimMaskShaderOptions(this.inLiquidFloat(x, y));
         final DrawOptions behind = ((TextureDrawOptionsEnd) texture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).startGlowOptions(level, (long)this.getID()).light(light).applyEnemyTracker(this, perspective)).pos(drawX, drawY);
-        final DrawOptions overlay = ((TextureDrawOptionsEnd) rubiesOverlayTexture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).pos(drawX, drawY));
+        GameTexture overlayTexture = (this.headlightsOn.get()) ? rubiesOverlayBrightHeadlightTexture : rubiesOverlayTexture;
+        final DrawOptions overlay = ((TextureDrawOptionsEnd) overlayTexture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).pos(drawX, drawY));
         list.add(new MobDrawable() {
             public void draw(TickManager tickManager) {
             }
@@ -95,7 +165,6 @@ public class PoweredMinecartMob extends MinecartMob {
         this.addShadowDrawables(tileList, level, x, y, light, camera);
     }
 
-    /// Mostly vanilla but replaced mob and texture
     public static void drawPlacePreview(Level level, int levelX, int levelY, int dir, GameCamera camera) {
         Mob mob = MobRegistry.getMob("poweredminecart", level);
         if (mob != null) {

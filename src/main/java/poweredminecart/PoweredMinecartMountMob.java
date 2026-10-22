@@ -1,16 +1,24 @@
-package moreminecarts;
+package poweredminecart;
 
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.localization.message.GameMessage;
+import necesse.engine.network.Packet;
 import necesse.engine.registries.MobRegistry;
+import necesse.engine.save.LoadData;
+import necesse.engine.save.SaveData;
+import necesse.engine.sound.SoundEffect;
+import necesse.engine.sound.SoundManager;
 import necesse.entity.mobs.*;
+import necesse.entity.mobs.networkField.BooleanNetworkField;
 import necesse.entity.mobs.summon.MinecartLinePos;
 import necesse.entity.mobs.summon.MinecartLines;
 import necesse.entity.mobs.summon.summonFollowingMob.mountFollowingMob.MinecartMountMob;
+import necesse.gfx.GameResources;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawOptions.DrawOptions;
 import necesse.gfx.drawOptions.texture.TextureDrawOptionsEnd;
 import necesse.gfx.drawables.OrderableDrawables;
+import necesse.gfx.gameTexture.GameTexture;
 import necesse.level.gameObject.GameObject;
 import necesse.level.gameObject.MinecartTrackObject;
 import necesse.level.maps.Level;
@@ -19,11 +27,16 @@ import necesse.level.maps.light.GameLight;
 import java.awt.*;
 import java.util.List;
 
-public class PoweredMinecartMountMob extends MinecartMountMob {
+public class PoweredMinecartMountMob extends MinecartMountMob implements MountAbility {
+    public final BooleanNetworkField headlightsOn;
+    private boolean loadedFromSave = false;
+
     public PoweredMinecartMountMob() {
         super();
         this.setSpeed(PoweredMinecartMob.speed);
         this.accelerationMod = PoweredMinecartMob.accelMod;
+
+        this.headlightsOn = this.registerNetworkField(new BooleanNetworkField(false));
     }
 
     @Override
@@ -31,10 +44,50 @@ public class PoweredMinecartMountMob extends MinecartMountMob {
         return MobRegistry.getLocalization("poweredminecart");
     }
 
+    public void init() {
+        super.init();
+
+        if (this.isServer() && !this.loadedFromSave) {
+            PoweredMinecartMob.setInitialHeadlightState(
+                    this.getLevel(),
+                    this.getX(),
+                    this.getY(),
+                    this.minecartDir,
+                    this.headlightsOn
+            );
+        }
+    }
+
+    @Override
+    public void addSaveData(SaveData save) {
+        super.addSaveData(save);
+        save.addBoolean("minecartHeadlightsOn", this.headlightsOn.get());
+    }
+
+    @Override
+    public void applyLoadData(LoadData save) {
+        super.applyLoadData(save);
+        this.headlightsOn.set(save.getBoolean("minecartHeadlightsOn", false));
+        this.loadedFromSave = true;
+    }
+
     @Override
     public void clientTick() {
         super.clientTick();
-        PoweredMinecartMob.refreshHeadlights((Mob)this, this.minecartDir);
+        if (headlightsOn.get()) PoweredMinecartMob.refreshHeadlights(this.getLevel(), (Mob)this, this.minecartDir);
+    }
+
+    public void runMountAbility(PlayerMob player, Packet content) {
+        boolean newState = !this.headlightsOn.get();
+        this.headlightsOn.set(newState);
+
+        if (this.isClient()) {
+            SoundManager.playSound(GameResources.tick, SoundEffect.effect(player).pitch(0.8F));
+        }
+    }
+
+    public boolean canRunMountAbility(PlayerMob player, Packet content) {
+        return true;
     }
 
     @Override
@@ -48,7 +101,8 @@ public class PoweredMinecartMountMob extends MinecartMountMob {
         drawY += level.getTile(getTileCoordinate(x), getTileCoordinate(y)).getMobSinkingAmount(this);
         final MaskShaderOptions swimMask = this.getSwimMaskShaderOptions(this.inLiquidFloat(x, y));
         final DrawOptions behind = ((TextureDrawOptionsEnd) PoweredMinecartMob.texture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).startGlowOptions(level, (long)this.getID()).light(light).applyEnemyTracker(this, perspective)).pos(drawX, drawY);
-        final DrawOptions overlay = ((TextureDrawOptionsEnd) PoweredMinecartMob.rubiesOverlayTexture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).pos(drawX, drawY));
+        GameTexture overlayTexture = (this.headlightsOn.get()) ? PoweredMinecartMob.rubiesOverlayBrightHeadlightTexture : PoweredMinecartMob.rubiesOverlayTexture;
+        final DrawOptions overlay = ((TextureDrawOptionsEnd) overlayTexture.initDraw().sprite(sprite.x, sprite.y, 64).addMaskShader(swimMask).pos(drawX, drawY));
         list.add(new MobDrawable() {
             public void draw(TickManager tickManager) {
             }
